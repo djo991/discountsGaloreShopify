@@ -1,10 +1,11 @@
 // app/routes/discounts._index.tsx
 import { LoaderFunctionArgs, json } from "@remix-run/node";
-import { useLoaderData, Link } from "@remix-run/react";
+import { useLoaderData } from "@remix-run/react";
 import { Page, Card, ResourceList, ResourceItem, Button } from "@shopify/polaris";
 import { listDiscounts } from "../models/discount.server";
 import { Redirect } from "@shopify/app-bridge/actions";
 import { getAppBridge } from "../utils/appBridgeClient";
+import { AppProvider } from "@shopify/shopify-app-remix/react";
 
 const STORE_HANDLE = import.meta.env.VITE_SHOPIFY_STORE_HANDLE;
 
@@ -16,29 +17,22 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 function OpenButtons({ gid }: { gid: string }) {
-  // Client-only: create redirects when button is clicked
+  // THIS IS THE KEY: We are going back to a manual onClick handler
   const onOpen = () => {
     const app = getAppBridge();
+    const path = `/discounts/detail?id=${encodeURIComponent(gid)}`;
+
     if (app) {
-      Redirect.create(app).dispatch(
-        Redirect.Action.APP,
-        `/discounts/detail?id=${encodeURIComponent(gid)}`
-      );
-    } else {
-      // Fallback: navigate iframe (first load without host)
-      window.location.assign(`/discounts/detail?id=${encodeURIComponent(gid)}`);
+      Redirect.create(app).dispatch(Redirect.Action.APP, { path });
     }
   };
 
   const onOpenAdmin = () => {
     const app = getAppBridge();
+    const path = `/discounts/${tailId(gid)}`;
+
     if (app) {
-      Redirect.create(app).dispatch(Redirect.Action.ADMIN_PATH, {
-        path: `/discounts/${tailId(gid)}`,
-      });
-    } else {
-      // No app bridge -> cannot control parent; show a gentle hint or noop
-      alert("Open this app from Shopify Admin → Apps first to enable Admin navigation.");
+      Redirect.create(app).dispatch(Redirect.Action.ADMIN_PATH, { path });
     }
   };
 

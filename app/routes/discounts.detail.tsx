@@ -1,5 +1,6 @@
 import ClientOnly from "../components/ClientOnly";
-import { useAppBridge } from "@shopify/app-bridge-react";
+import { getAppBridge } from "../utils/appBridgeClient";
+//import { useAppBridge } from "@shopify/app-bridge-react";
 import { Redirect } from "@shopify/app-bridge/actions";
 import { LoaderFunctionArgs, json } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
@@ -7,12 +8,16 @@ import { Page, Card, Text } from "@shopify/polaris";
 import { getDiscountDetail } from "../models/discount.server";
 import { useEffect } from "react";
 const tailId = (gid: string) => gid.split("/").pop() ?? gid;
+
 function SyncParent({ id }: { id: string }) {
-  const app = useAppBridge();
+  // 3. CHANGE this to use getAppBridge()
   useEffect(() => {
-    const r = Redirect.create(app);
-    r.dispatch(Redirect.Action.APP, `/discounts/detail?id=${enctodeURIComponent(id)}`);
-  }, [app, id]);
+    const app = getAppBridge();
+    if (app) {
+      const r = Redirect.create(app);
+      r.dispatch(Redirect.Action.APP, `/discounts/detail?id=${encodeURIComponent(id)}`);
+    }
+  }, [id]);
   return null;
 }
 
@@ -30,15 +35,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 export default function DiscountDetail() {
   const { data, id } = useLoaderData<typeof loader>();
-  const app = useAppBridge();
   const d: any = data?.discount ?? {};
   const firstCode = "codes" in d ? d?.codes?.nodes?.[0]?.code : undefined;
 
-  useEffect(() => {
-    const redirect = Redirect.create(app);
-    // Sync the parent Admin URL to this app-relative path
-    redirect.dispatch(Redirect.Action.APP, `/discounts/detail?id=${encodeURIComponent(id)}`);
-  }, [app, id]);
   return (
     <Page title={d.title ?? "Discount"}>
       <ClientOnly>
